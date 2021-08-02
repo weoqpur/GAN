@@ -72,3 +72,101 @@ def weights_init(m):
         nn.init.normal_(m.weight.data, 1.0, 0.02)
         nn.init.constant_(m.bias.data, 0) ## 주어진 텐서서 자리에 스칼라 값을 넣는다
 
+
+## 생성자
+class Generator(nn.Module):
+    def __init__(self, ngpu):
+        super(Generator, self).__init__()
+        self.ngpu = ngpu
+        self.main = nn.Sequential(
+            ## input은 Z
+            nn.ConvTranspose2d(nz, ngf * 8, 4, 1, 0, bias=False),
+            nn.BatchNorm2d(ngf * 8),
+            nn.ReLU(True),
+            ## state size. (ngf * 8) x 4 x 4
+            nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ngf * 4),
+            nn.ReLU(True),
+            ## state size. (ngf * 4) x 8 x 8
+            nn.ConvTranspose2d(ngf * 4, ngf * 2, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ngf * 2),
+            nn.ReLU(True),
+            ## state size. (ngf * 2) x 16 x 16
+            nn.ConvTranspose2d(ngf * 2, ngf, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ngf),
+            nn.ReLU(True),
+            ## state size. (ngf) x 32 x 32
+            nn.ConvTranspose2d(ngf, nc, 4, 2, 1, bias=False),
+            nn.Tanh()
+            ## state size. (nc) x 64 x 64
+        )
+
+    def forward(self, input):
+        return self.main(input)
+
+
+class Discriminator(nn.Module):
+    def __init__(self, ngpu):
+        super(Discriminator, self).__init__()
+        self.ngpu = ngpu
+        self.main = nn.Sequential(
+            ## input is (nc) x 64 x 64
+            nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            ## state size. (ndf) x 32 x 32
+            nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ndf * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            ## state size. (ndf * 2) x 16 x 16
+            nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ndf * 4),
+            nn.LeakyReLU(0.2, inplace=True),
+            ## state size. (ndf * 4) x 8 x 8
+            nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ndf * 8),
+            nn.LeakyReLU(0.2, inplace=True),
+            ## state size. (ndf*8) x 4 x 4
+            nn.Conv2d(ndf * 8, 1, 4, 1, 0, bias=False),
+            nn.Sigmoid()
+        )
+
+    def forward(self, input):
+        return self.main(input)
+
+
+## generator를 생성
+netG = Generator(ngpu).to(device)
+
+## 사용할 수 있다면 GPU사용
+if (device.type == 'cuda') and (ngpu > 1):
+    netG = nn.DataParallel(netG, list(range(ngpu)))
+
+## weights_init 함수를 적용하여 모든 가중치를 무작위로 초기화 합니다.
+## to mean=0, stdev=0.2
+netG.apply(weights_init)
+
+## Discriminator
+netD = Discriminator(ngpu).to(device)
+
+## 멀티 GPU를 사용할지 말지 걱정
+if (device.type == 'cuda') and (ngpu > 1):
+    netD = nn.DataParallel(netD, list(range(ngpu)))
+
+## weights_init 함수를 적용하여 모든 가중치를 무작위로 초기화 합니다.
+## to mean=0, stdev=0.2
+netD.apply(weights_init)
+
+## 모델 출력
+print(netG)
+print(netD)
+
+## BCELoss function 초기값 설정
+criterion = nn.BCELoss()
+
+## 시각화에 사용할 잠재 벡터 배치 생성
+## generator 진행
+fixed_noise = torch.randn(64, nz, 1, 1, device=device)
+
+## 훈련 중 진짜 레이블과 가짜 레이블에 대한 규칙 설정
+real_label = 1.
+fake_label = 0.
