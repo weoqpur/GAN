@@ -203,7 +203,7 @@ for epoch in range(num_epochs):
         # 모든 배치에서 손실 계산
         errD_real = criterion(output, label)
         # 후방 전달에서 Discriminator에 대한 기울기 계산
-        errD_real.backword()
+        errD_real.backward()
         D_x = output.mean().item()
 
         ## 가짜 batch 훈련 part
@@ -239,3 +239,60 @@ for epoch in range(num_epochs):
         # update G
         optimizerG.step()
 
+        # 훈련 통계 출력
+        if i % 50 == 0:
+            print('[%d/%d][%d/%d] Loss_D: %.4f Loss_G: %.4f D(x): %.4f D(G(z)): %.4f / %.4f'
+                  % (epoch, num_epochs, i, len(dataloader), errD.item(), errG.item(), D_x, D_G_z1, D_G_z2))
+
+        # 나중에 플로팅하기 위해 손실 저장
+        G_losses.append(errG.item())
+        D_losses.append(errD.item())
+
+        # fixed_noise에 G의 출력을 저장하여 제너레이터가 어떻게 작동되는지 확인
+        if (iters % 500 == 0) or ((epoch == num_epochs - 1) and (i == len(dataloader) - 1)):
+            with torch.no_grad():
+                fake = netG(fixed_noise).detach().cpu()
+            img_list.append(vutils.make_grid(fake, padding=2, normalize=True))
+
+        iters += 1
+
+
+## 손실 대 훈련 반복
+
+plt.figure(figsize=(10,5))
+plt.title("Generator and Discriminator Loss During Training")
+plt.plot(G_losses,label="G")
+plt.plot(D_losses,label="D")
+plt.xlabel("iterations")
+plt.ylabel("Loss")
+plt.legend()
+plt.show()
+
+
+# G 진행의 시각화
+
+fig = plt.figure(figsize=(8,8))
+plt.axis("off")
+ims = [[plt.imshow(np.transpose(i,(1,2,0)), animated=True)] for i in img_list]
+ani = animation.ArtistAnimation(fig, ims, interval=1000, repeat_delay=1000, blit=True)
+
+HTML(ani.to_jshtml())
+
+
+## 실제 이미지 대 가짜 이미지
+# Grab a batch of real images from the dataloader
+real_batch = next(iter(dataloader))
+
+# Plot the real images
+plt.figure(figsize=(15,15))
+plt.subplot(1,2,1)
+plt.axis("off")
+plt.title("Real Images")
+plt.imshow(np.transpose(vutils.make_grid(real_batch[0].to(device)[:64], padding=5, normalize=True).cpu(),(1,2,0)))
+
+# Plot the fake images from the last epoch
+plt.subplot(1,2,2)
+plt.axis("off")
+plt.title("Fake Images")
+plt.imshow(np.transpose(img_list[-1],(1,2,0)))
+plt.show()
