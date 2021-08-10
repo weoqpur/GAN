@@ -79,10 +79,10 @@ class Generator(nn.Module):
         super(Generator, self).__init__()
         self.ngpu = ngpu
         self.main = nn.Sequential(
-            ## input은 Z
-            nn.ConvTranspose2d(nz, ngf * 8, 4, 1, 0, bias=False),
-            nn.BatchNorm2d(ngf * 8),
-            nn.ReLU(True),
+            ## input에 Z를 넣고 convolution 진행
+            nn.ConvTranspose2d(nz, ngf * 8, 4, 1, 0, bias=False), ## 512개의 피처맵을 생성
+            nn.BatchNorm2d(ngf * 8), ## batchnormalization진행
+            nn.ReLU(True),## 활성화 함수 사용
             ## state size. (ngf * 8) x 4 x 4
             nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1, bias=False),
             nn.BatchNorm2d(ngf * 4),
@@ -96,8 +96,8 @@ class Generator(nn.Module):
             nn.BatchNorm2d(ngf),
             nn.ReLU(True),
             ## state size. (ngf) x 32 x 32
-            nn.ConvTranspose2d(ngf, nc, 4, 2, 1, bias=False),
-            nn.Tanh()
+            nn.ConvTranspose2d(ngf, nc, 4, 2, 1, bias=False), ## RGB값을 3개의 채널로 추출
+            nn.Tanh() ## Tanh 함수로 연산
             ## state size. (nc) x 64 x 64
         )
 
@@ -111,8 +111,8 @@ class Discriminator(nn.Module):
         self.ngpu = ngpu
         self.main = nn.Sequential(
             ## input is (nc) x 64 x 64
-            nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
-            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),## 2d convolution 연산을 진행
+            nn.LeakyReLU(0.2, inplace=True), ## LeakyReLU 사용
             ## state size. (ndf) x 32 x 32
             nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=False),
             nn.BatchNorm2d(ndf * 2),
@@ -126,8 +126,8 @@ class Discriminator(nn.Module):
             nn.BatchNorm2d(ndf * 8),
             nn.LeakyReLU(0.2, inplace=True),
             ## state size. (ndf*8) x 4 x 4
-            nn.Conv2d(ndf * 8, 1, 4, 1, 0, bias=False),
-            nn.Sigmoid()
+            nn.Conv2d(ndf * 8, 1, 4, 1, 0, bias=False), ## 마지막은 채널을 하나만 출력
+            nn.Sigmoid() ## sigmoid함수로 연산
         )
 
     def forward(self, input):
@@ -170,3 +170,37 @@ fixed_noise = torch.randn(64, nz, 1, 1, device=device)
 ## 훈련 중 진짜 레이블과 가짜 레이블에 대한 규칙 설정
 real_label = 1.
 fake_label = 0.
+
+## Adam optimizer 사용 G D 둘 다
+optimizerD = optim.Adam(netD.parameters(), lr=lr, betas=(beta1, 0.999))
+optimizerG = optim.Adam(netG.parameters(), lr=lr, betas=(beta1, 0.999))
+
+## 훈련 루프
+
+## 진행 상황 저장용 리스트
+img_list = []
+D_losses = []
+G_losses = []
+iters = 0
+
+print("훈련 시작")
+
+for epoch in range(num_epochs):
+    ## batch 단위로 반복
+    for i, data in enumerate(dataloader, 0):
+
+        ########################################################################
+        # (1) Discriminator network 업데이트: maximize log(D(x)) + log(1 - D(G(z)))
+        ########################################################################
+        netD.zero_grad() ## 기울기를 0으로 설정
+        ## 배치를 구성
+        real_cpu = data[0].to(device)
+        b_size = real_cpu.size(0)
+        label = torch.full((b_size,), real_label, dtype=torch.float, device=device)
+        ## Discriminator에게 배치를 전방 전달
+        output = netD(real_cpu).view(-1)
+        ## 모든 배치에서 손실 계산
+        errD_real = criterion(output, label)
+        ## 후방 전달에서 Discriminator에 대한 기울기 계산
+        errD_real.backword()
+        D_x = output.mean().item()
