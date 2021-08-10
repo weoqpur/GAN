@@ -227,4 +227,15 @@ for epoch in range(num_epochs):
         #####################################################
         # (2) Generator network 업데이트: maximize log(D(G(z)))
         #####################################################
+        netG.zero_grad()
+        label.fill_(real_label)
+        # D를 통해 모든 가짜 배치의 또 다른 정방 전달을 수행합니다.
+        output = netD(fake).view(-1)
+        # 이 출력을 기반으로 G의 오차을 계산
+        errG = criterion(output, label)
+        # G에 대한 기울기 계산
+        errG.backward()
+        D_G_z2 = output.mean().item()
+        # update G
+        optimizerG.step()
 
