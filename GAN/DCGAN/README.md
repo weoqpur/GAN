@@ -59,6 +59,7 @@ pooling layers를 fractional-strided convolutions로 바꾼다.
 
 + Discriminator에서는 모든 활성화 함수를 LeakyRelu를 쓴다.
 ---
+
 ###batch normalization
 
 Gradient Vanishing/Gradient Exploding이 일어나지 않도록 하는 아이디어 였다.   
