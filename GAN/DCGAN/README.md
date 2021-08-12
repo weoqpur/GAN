@@ -7,9 +7,7 @@ img_align_celeba.zip 설치 후
 
 경로를 root라는 변수에 문자열로 저장 해줍니다.
 
-## DCGAN
-
-### DCGAN이 나온 배경
+## DCGAN이 나온 배경
 
 DCGAN은 GAN모델에서 Generator를 개선한 논문이다.
 일반 GAN은 Generator가 Discriminator를 속인다
@@ -35,3 +33,12 @@ GAN의 한계에서 자세히 설명하도록 하겠다.
    결과물이 얼마나 잘 만들어졌는지 비교 할 수 없다.   
    사람이 봐도 주관적인 기준이기 때문에 얼마나 뛰어난지, 정확한지   
    판단하기 어렵다.
+   
+## DCGAN의 목표
+
+> 1. Generator가 단순 기억으로 generate하지 않는다는 것을 보여줘야 한다
+>
+> 2. z의 미세한 변동에 따른 generate결과가 연속적으로 부드럽게 이루어져야 한다
+> (이를 walking in the latent space라고 한다)
+
+## DCGAN의 Architecture
