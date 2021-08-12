@@ -60,7 +60,7 @@ pooling layers를 fractional-strided convolutions로 바꾼다.
 + Discriminator에서는 모든 활성화 함수를 LeakyRelu를 쓴다.
 ---
 
-###batch normalization
+### batch normalization
 
 Gradient Vanishing/Gradient Exploding이 일어나지 않도록 하는 아이디어 였다.   
 자세한건 [여기](https://velog.io/@weoqpur/%EB%82%B4%EA%B0%80-%EC%9D%B4%ED%95%B4%ED%95%9C-Batch-Normalization%EB%B0%B0%EC%B9%98-%EC%A0%95%EA%B7%9C%ED%99%94)
