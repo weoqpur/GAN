@@ -42,3 +42,20 @@ GAN의 한계에서 자세히 설명하도록 하겠다.
 > (이를 walking in the latent space라고 한다)
 
 ## DCGAN의 Architecture
+![`이미지`](https://angrypark.github.io/images/2017-08-03-DCGAN-paper-reading/architecture-guidelines.png)
+DCGAN 논문의 가이드라인에는 이런식으로 나와있다.   
++ Discriminator에서 모든 pooling layers를 strided convolutions로 바꾸고, Generator에서는
+pooling layers를 fractional-strided convolutions로 바꾼다.
+     
+
++ Generator와 Discriminator에 batch-normalization을 사용한다.
+
+
++ Fully-connected hidden layers를 삭제한다.
+
+
++ Generator에서 모든 활성화 함수를 Relu를 쓰되, 마지막 결과에서만 Tanh를 사용한다.
+
+
++ Discriminator에서는 모든 활성화 함수를 LeakyRelu를 쓴다.
+
