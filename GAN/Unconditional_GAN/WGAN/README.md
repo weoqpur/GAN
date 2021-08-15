@@ -22,11 +22,26 @@ GAN의 학습 과정에서 특정 학습 이터레이션에서 discriminator의 
 Mode Dropping이 무엇인지 이해를 하려면 mode가 무엇인지 부터 이해해야 한다. mode는 최빈값, 즉 가장 빈도가 높은 값을 말합니다.
 Mode는 확률 분포에서 가장 점이 많은 지점이라고 할 수 있다.
 
-그럼 multi-modal은 무엇이냐 바로 mode가 여러개 존재한다는 말이다. mode dropping의
+그럼 multi-modal은 무엇이냐 바로 mode가 여러개 존재한다는 말이다. mode droppingㅉ
 예를 들어보면 확률 분포표에 mode가 4개 있고 각각 자몽, 사과, 레몬, 오렌지라고 해보자 4개의 mode 중 하나로만 치우쳐서 변환시킬 때 문제가 생기며
 
 하나의 mode로 치우칠 경우 generator가 계속 같은 이미지만 생성하고 discriminator는 그 이미지가 진짜 이미지라고 생각한다.
 이렇게 계속 훈련이 되면 generator는 뭘 만들든 discriminator만 속이면 되기에 같은 이미지만 계속 만들고 
 이미지의 품질은 올라갈 수 있어도 이미지의 다양성이 떨어져 문제가 된다.
+---
 
+Wasserstein GAN에서는 이러한 문제점을 해결하기 위하여 기존의 GAN에 비해 아래와 같은 차이점을 둔다.   
+
++ discriminator대신 새로 정의한 critic을 사용한다. discriminator는 가짜/진짜를 판별하기 위해 sigmoid를 사용하고,
+output은 가짜/진짜에 대한 예측 확률 값이다.
+  
++ 반면 critic은 EM(Earth Mover) distance로부터 얻은 scalar 값을 이용한다.
++ EM distance는 확률 분포 간의 거리를 측정하는 척도 중 하나인데, 그 동안 일반적으로 사용된 척도는 KL divergence이다.
+KL divergence는 매우 strict 하게 거리를 측정하는 방법이라서, continuous 하지 않은 경우가 있고 학습시키기 어렵다.
+  
+결과적으로, GAN의 discriminator보다 선생님 역할을 잘 수행할 수 있는 critic을 사용함으로써 gradient를 잘 전달시키고,
+critic과 generator를 최적점까지 학습할 수 있다는 것이다.
+
++ training 시 discriminator와 generator간의 balance를 주의깊게 살피고 있지 않아도 된다.
++ GAN에서 일반적으로 발생되는 문제인 mode dropping을 해결 가능하다.
 
