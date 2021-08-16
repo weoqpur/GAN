@@ -37,7 +37,7 @@ Wasserstein GAN에서는 이러한 문제점을 해결하기 위하여 기존의
 output은 가짜/진짜에 대한 예측 확률 값이다.
   
 + 반면 critic은 EM(Earth Mover) distance로부터 얻은 scalar 값을 이용한다.
-+ EM distance는 확률 분포 간의 거리를 측정하는 척도 중 하나인데, 그 동안 일반적으로 사용된 척도는 KL divergence이다.
++ EM(Earth Mover) distance는 확률 분포 간의 거리를 측정하는 척도 중 하나인데, 그 동안 일반적으로 사용된 척도는 KL divergence이다.
 KL divergence는 매우 strict 하게 거리를 측정하는 방법이라서, continuous 하지 않은 경우가 있고 학습시키기 어렵다.
   
 결과적으로, GAN의 discriminator보다 선생님 역할을 잘 수행할 수 있는 critic을 사용함으로써 gradient를 잘 전달시키고,
@@ -45,4 +45,18 @@ critic과 generator를 최적점까지 학습할 수 있다는 것이다.
 
 + training 시 discriminator와 generator간의 balance를 주의깊게 살피고 있지 않아도 된다.
 + GAN에서 일반적으로 발생되는 문제인 mode dropping을 해결 가능하다.
+
+## Different Distances
+
+### 1.Earth-Mover (EM) distance
+
+![`이미지`](https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2FcRYWX7%2FbtquPLFEIno%2Fb8ZCkbO7JObbR2XKzgeDt0%2Fimg.png)   
+ 
+솔직이 나도 이 수식은 아직 이해가 안 간다. 그림으로 표현된 쉬운 설명으로 알아보겠다.
+두 확률 분포의 결합확률분포 Π(Pr, Pg)중에서 d(X,Y) (x와 y의 거리)의 기댓값을 가장 작게 추정한 값이다.   
+
+![`이미지`](https://blog.kakaocdn.net/dn/bj3bPu/btqu0tAfLOo/KK8IrApFXoTXzowJ9fZcYK/img.png)
+
+위 그림을 보면 각각 파란색 원이 X의 분포, 빨간색 원이 Y의 분포, x가 결합 확률 분포를 의미한다. 그리고 초록색 선의 길이가 ||x-y||를 의미하는데, 즉 초록색 선 길이들의 기댓값을 가장 작게 추정한 값이다.
+
 
