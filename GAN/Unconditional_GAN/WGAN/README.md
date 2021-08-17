@@ -1,6 +1,13 @@
 ## WGAN(Wasserstein GAN)
 
+WGAN은 기존 GAN이 학습이 잘 안되는 이유를 KL divergence의 한계로 언급하며, loss function을 재정의하여 안정성을 제고한다.
+여기서 Wasserstein distance에 대해서 자세히 알아보도록 하겠다.
+
 이 논문은 기존 GAN의 loss function에 주목하였다.
+![`이미지`](/Users/sinmugyeol/Desktop/WGANNotation.png)
+수식이 상당히 많이 나오는데 위 표기법을 참고하겠다.
+
+
 
 ![`이미지`](https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2F4HgQb%2Fbtqu2IouBYN%2FdCQNXSAl4MS8F8ZkAKFkjk%2Fimg.png)   
 위 식에서는 P(x)의 식을 직접 표현하는 것은 어렵기 때문에(정답을 이미 알고있다는 의미가 된다),
