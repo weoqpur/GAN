@@ -55,7 +55,24 @@ critic과 generator를 최적점까지 학습할 수 있다는 것이다.
 
 ## Different Distances
 
-### 1.Earth-Mover (EM) distance
+### 1. Total Variation (TV) distance
+
+![`이미지`](/Users/sinmugyeol/Desktop/TotalVariationDistance.png)   
+두 확률 분포의 측정값이 벌어질 수 있는 가장 큰 값을 뜻한다.
+
+![`이미지`](https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2FOIjhB%2Fbtqu0uTsP6L%2FqWKxG6F0W0MKB7sA3liKpK%2Fimg.png)   
+위 그림을 보면 쉽게 이해할 수 있다. 그림에서 빨간색 A의 영역 안에 있는 A들을 대입하였을 때, Pr(A)와 Pg(A)의 값의 차 중 가장 큰 것을 뜻한다.
+
+### 2. Kullback-Leibler(KL) divergence
+
+![`이미지`](https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2FztpKH%2FbtquL0dRXvF%2FhPeB8bQU57lavQh1uydXA0%2Fimg.png)   
+두 확률 분포의 차이를 계산하는데 사용하는 함수이다. 어떤 이상적인 분포에 대해 그 분포를 근사하는 다른 분포를 사용해 샘플링을 한다면 발생할 수 있는 정보 엔트로피 차이를 계산한다. 또한, 상대 엔트로피, 정보 획득량, 인포메이션 다이버전스라고도 한다.
+
+이렇게 들으면 이해가 잘 안간다. 쉽게 설명하자면 그냥 Cross Entropy - Entropy라고 생각하면 된다. 즉 다시말해, KL divergence는 p와 q의 cross entropy에서 p의 entropy를 뺀 것이다. 결과적으로 두 분포의 차이를 나타낸다. 이것을 식으로 표현하면 이렇게할 수 있다.   
+![`이미지`](https://wikimedia.org/api/rest_v1/media/math/render/svg/571a31aedae1107f2574a3dfcb4d6caf4924dcc5)   
+KL divergence의 정확한 식은 이렇다. 우리가 대개 cross entropy를 minimize 하는 것은, 어차피 H(p)는 고정된 상수값이기 때문에 결과적으로는 KL-divergence를 minimize하는 것과 같다.
+
+### 4.Earth-Mover (EM) distance
 
 ![`이미지`](https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2FcRYWX7%2FbtquPLFEIno%2Fb8ZCkbO7JObbR2XKzgeDt0%2Fimg.png)   
  
