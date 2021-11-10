@@ -137,7 +137,7 @@ def contributions(in_length, out_length, scale, kernel, kernel_width, antialiasi
     mirror = np.uint(np.concatenate((np.arange(in_length), np.arange(in_length - 1, -1, step=-1))))
     field_of_view = mirror[np.mod(field_of_view, mirror.shape[0])]
 
-    # weights가 0인 weights와 픽셀 위치를 제거합니다.
+    # weights가 0인 weights와 픽셀 위치를 제거한다.
     non_zero_out_pixels = np.nonzero(np.any(weights, axis=0))
     weights = np.squeeze(weights[:, non_zero_out_pixels])
     field_of_view = np.squeeze(field_of_view[:, non_zero_out_pixels])
@@ -146,3 +146,19 @@ def contributions(in_length, out_length, scale, kernel, kernel_width, antialiasi
     return weights, field_of_view
 
 
+def resize_along_dim(im, dim, weights, field_of_view):
+    # 각 dim에 작업을 수행하기 위해 dim 0을 원하는 dim으로 바꾸면 크가기 조정된다.
+    tmp_im = np.swapaxes(im, dim, 0)
+
+    # 무게 행렬에 싱글톤 dimensions을 추가하여 tmp_im[field_of_view.T]에 대해 얻은 큰 텐서와 곱할 수 있다. (bsxfun style)
+    weights = np.reshape(weights.T, list(weights.T.shape) + (np.ndim(im) - 1) * [1])
+
+    # 이것은 약간의 복잡한 곱셈이다: tmp_im[field_of_view.T]는 image_dims+1 차수의 텐서이다.
+    # output image의 각 픽셀에 대해 input image의 영향 위치와 일치한다.
+    # 그런 다음 각 픽셀에 대해 일치하는 weights set로 위치 set를 곱한다.
+    # 이 큰 텐서 요소별 곱셈 (MATLAB bsxfun style):
+    # 일치 dim은 요소별로 곱한 반면, singletons은 일치 dim을 모두 동일한 숫자로 곱한 것을 의미한다.
+    tmp_out_im = np.sum(tmp_im[field_of_view.T] * weights, axis=0)
+
+    # 마지막으로 axis를 원래 순서로 바꾼다.
+    return np.swapaxes(tmp_out_im, dim, 0)
