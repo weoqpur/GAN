@@ -4,12 +4,6 @@
 # input -> Conv(k9n64s1)-> PReLU-> (Conv(k3n64s1)-> BN-> PReLU-> Conv(k3n64s1)-> BN) * 5->
 # Conv(k3n64s1)-> PReLU-> (Conv-> PixelShuffle-> PReLU)-> Conv(k3n64s1) -> output
 
-# discriminator
-# input -> Conv(k3n64s1)-> Leaky ReLU-> (Conv(k3n64s2)-> BN-> Leaky ReLU)->
-# (Conv(k3n128s1)-> BN-> Leaky ReLU)-> (Conv(k3n128s2)-> BN-> Leaky ReLU)->
-# (Conv(k3n256s1)-> BN-> Leaky ReLU)-> (Conv(k3n256s2)-> BN-> Leaky ReLU)->
-# (Conv(k3n512s1)-> BN-> Leaky ReLU)-> (Conv(k3n512s2)-> BN-> Leaky ReLU)->
-# Conv (1024)-> Leaky ReLU-> Conv (1)-> Sigmoid -> 1 or 0
 
 import torch
 import torch.nn as nn
@@ -35,7 +29,20 @@ class ResidualBlock(nn.Module):
 
         return x + residual
 
+# UpsampleBlock
+# (Conv-> PixelShuffle-> PReLU)
+class UpsampleBlock(nn.Module):
+    def __init__(self, in_channels, up_scale):
+        super(UpsampleBlock, self).__init__()
+        self.conv = nn.Conv2d(in_channels, in_channels * up_scale ** 2, kernel_size=3, padding=1)
+        self.pixel_shuffle = nn.PixelShuffle(up_scale)
+        self.prelu = nn.PReLU()
 
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.pixel_shuffle(x)
+        x = self.prelu(x)
+        return x
 
 
 # Generator
@@ -57,3 +64,26 @@ class Generator(nn.Module):
             nn.Conv2d(64, 64, kernel_size=3, padding=1),
             nn.BatchNorm2d(64)
         )
+        block8 = [UpsampleBlock(64, 2) for _ in range(upsample_block_num)]
+        block8.append(nn.Conv2d(64, 3, kernel_size=9, padding=4))
+        self.block8 = nn.Sequential(*block8)
+
+    def forward(self, x):
+        block1 = self.block1(x)
+        block2 = self.block2(block1)
+        block3 = self.block3(block2)
+        block4 = self.block4(block3)
+        block5 = self.block5(block4)
+        block6 = self.block6(block5)
+        block7 = self.block7(block6)
+        block8 = self.block8(block1 + block7)
+
+        return (torch.tanh(block8) + 1) / 2
+
+# Discriminator
+# input -> Conv(k3n64s1)-> Leaky ReLU-> (Conv(k3n64s2)-> BN-> Leaky ReLU)->
+# (Conv(k3n128s1)-> BN-> Leaky ReLU)-> (Conv(k3n128s2)-> BN-> Leaky ReLU)->
+# (Conv(k3n256s1)-> BN-> Leaky ReLU)-> (Conv(k3n256s2)-> BN-> Leaky ReLU)->
+# (Conv(k3n512s1)-> BN-> Leaky ReLU)-> (Conv(k3n512s2)-> BN-> Leaky ReLU)->
+# Conv (1024)-> Leaky ReLU-> Conv (1)-> Sigmoid -> 1 or 0
+
