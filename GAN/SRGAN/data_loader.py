@@ -20,6 +20,14 @@ def calculate_valid_crop_size(crop_size, upscale_factor):
 
 
 ## transforms
+def display_transform():
+    return Compose([
+        ToPILImage(),
+        Resize(400),
+        CenterCrop(400),
+        ToTensor()
+    ])
+
 
 def train_hr_transfrom(crop_size):
     return Compose([
