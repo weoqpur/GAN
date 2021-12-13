@@ -3,10 +3,9 @@ import torch.nn as nn
 
 
 class Generator(nn.Module):
-    def __init__(self, scale_factor):
+    def __init__(self, factor):
         super(Generator, self).__init__()
         channel = 64
-        factor = scale_factor
         # encoder
         self.enc1 = CBR2d(3, self.channel, norm=None, relu=0.2)
         self.enc2 = CBR2d(channel, channel * factor, relu=0.2)
@@ -64,6 +63,25 @@ class Generator(nn.Module):
 
         return self.tanh(dec8)
 
+class Discriminator(nn.Module):
+    def __init__(self, factor):
+        super(Discriminator, self).__init__()
+        channel = 64
+        self.cbr1 = CBR2d(6, channel, norm=None, relu=0.2)
+        self.cbr2 = CBR2d(channel, channel * factor, relu=0.2)
+        self.cbr3 = CBR2d(channel * factor, channel * factor * 2, relu=0.2)
+        self.cbr4 = CBR2d(channel * factor * 2, channel * factor * 4, relu=0.2)
+        self.cbr5 = CBR2d(channel * factor * 4, 1, relu=0.2)
+        self.sig = nn.Sigmoid()
+
+    def forward(self, x):
+        x = self.cbr1(x)
+        x = self.cbr2(x)
+        x = self.cbr3(x)
+        x = self.cbr4(x)
+        x = self.cbr5(x)
+
+        return self.sig(x)
 
 class CBR2d(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=4, stride=2, padding=1, bias=True, norm='bnorm', relu=0.0):
@@ -90,7 +108,8 @@ class DECBDR2d(nn.Module):
             layer += [nn.BatchNorm2d(in_channel * downscale_factor) if norm == 'bnorm' else nn.InstanceNorm2d(in_channel * downscale_factor)]
         if not drop is None:
             layer += [nn.Dropout2d(drop)]
-        layer += [nn.ReLU() if relu == 0 else nn.LeakyReLU(relu)]
+        if not relu is None:
+            layer += [nn.ReLU() if relu == 0 else nn.LeakyReLU(relu)]
 
         self.decbdr = nn.Sequential(layer)
 
