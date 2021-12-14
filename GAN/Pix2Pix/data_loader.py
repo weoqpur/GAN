@@ -1,5 +1,8 @@
+import os.path
 from os import listdir
 from os.path import join
+import matplotlib.pyplot as plt
+import numpy as np
 
 import numpy as np
 from PIL import Image
@@ -11,13 +14,12 @@ def is_image_file(filename):
     return any(filename.endswith(extension) for extension in ['.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG'])
 
 class Dataset(Dataset):
-    def __init__(self, data_dir):
+    def __init__(self, data_dir, crop_size):
         super(Dataset, self).__init__()
-        self.image_filenames = [join(data_dir, x) for x in listdir(data_dir) if is_image_file(x)]
-        if self.image_filenames.dtype == np.uint8:
-            self.image_filenames = self.image_filenames/255
-        self.transform_train = Compose([Resize(shape=(286, 286, 3)),
-                                   RandomCrop((256, 256)),
+        self.data_dir = data_dir
+        self.lst_data = [x for x in os.listdir(data_dir)]
+        self.transform = Compose([Resize((286, 286)),
+                                   RandomCrop((crop_size, crop_size)),
                                    Normalize((0.5), (0.5))])
 
     def __len__(self):
@@ -25,9 +27,16 @@ class Dataset(Dataset):
 
     def __getitem__(self, index):
 
-        img = self.transform_train(Image.open(self.image_filenames[index]))
-        sz = img.shape
+        img = plt.imread(os.path.join(self.data_dir, self.lst_data[index]))
+        size = img.shape
+        if img.ndim == 2:
+            img = img[:, :, np.newaxis]
 
-        img = {'label': img[:, :sz[1]//2, :], 'input': img[:, sz[1]//2:, :]}
+        if img.dtype == np.uint8:
+            img = img / 255
+
+        img = {'label': img[:, :size[1]//2, :], 'input': img[:, size[1]//2:, :]}
+
+        img = self.transform(img)
 
         return img
