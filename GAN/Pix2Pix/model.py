@@ -7,7 +7,7 @@ class Generator(nn.Module):
         super(Generator, self).__init__()
         channel = 64
         # encoder
-        self.enc1 = CBR2d(3, self.channel, norm=None, relu=0.2)
+        self.enc1 = CBR2d(3, channel, norm=None, relu=0.2)
         self.enc2 = CBR2d(channel, channel * factor, relu=0.2)
         self.enc3 = CBR2d(channel * factor, factor * 2 * channel, relu=0.2)
         self.enc4 = CBR2d(channel * 2 * factor, channel * 4 * factor, relu=0.2)
@@ -21,9 +21,9 @@ class Generator(nn.Module):
         self.dec2 = DECBDR2d(channel * 8 * factor, channel * 4 * factor)
         self.dec3 = DECBDR2d(channel * 8 * factor, channel * 4 * factor)
         self.dec4 = DECBDR2d(channel * 8 * factor, channel * 4 * factor, drop=None)
-        self.dec5 = DECBDR2d(channel * 8 * factor, channel * 4 * factor, drop=None)
-        self.dec6 = DECBDR2d(channel * 4 * factor, channel * 2 * factor, drop=None)
-        self.dec7 = DECBDR2d(channel * 2 * factor, channel * factor, drop=None)
+        self.dec5 = DECBDR2d(channel * 8 * factor, channel * 2 * factor, drop=None)
+        self.dec6 = DECBDR2d(channel * 4 * factor, channel * factor, drop=None)
+        self.dec7 = DECBDR2d(channel * 2 * factor, channel, drop=None)
         self.dec8 = DECBDR2d(channel * factor, 3, norm=None, relu=None, drop=None)
 
         self.tanh = nn.Tanh()
@@ -42,7 +42,8 @@ class Generator(nn.Module):
 
         cat1 = torch.cat((dec1, enc7), dim=1)
         dec2 = self.dec2(cat1)
-
+        print(dec2.shape)
+        print(enc6.shape)
         cat2 = torch.cat((dec2, enc6), dim=1)
         dec3 = self.dec3(cat2)
 
@@ -93,28 +94,30 @@ class CBR2d(nn.Module):
             layer += [nn.BatchNorm2d(out_channels) if norm == 'bnorm' else nn.InstanceNorm2d(out_channels)]
         layer += [nn.ReLU() if relu == 0 else nn.LeakyReLU(relu)]
 
-        self.cbr = nn.Sequential(layer)
+        self.cbr = nn.Sequential(*layer)
 
     def forward(self, x):
-        return self.cbr(x)
+        x2 = torch.tensor(x.clone(), dtype=torch.float32)
+        return self.cbr(x2)
 
 
 class DECBDR2d(nn.Module):
-    def __init__(self, in_channel, downscale_factor, kernel_size=4, stride=2, padding=1, bias=True, norm='bnorm', relu=0.0, drop=0.5):
+    def __init__(self, in_channel, out_channel, kernel_size=4, stride=2, padding=1, bias=True, norm='bnorm', relu=0.0, drop=0.5):
         super(DECBDR2d, self).__init__()
         layer = []
-        layer += [nn.Conv2d(in_channels=in_channel, out_channels=in_channel / downscale_factor, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias)]
+        layer += [nn.ConvTranspose2d(in_channels=in_channel, out_channels=out_channel, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias)]
         if not norm is None:
-            layer += [nn.BatchNorm2d(in_channel * downscale_factor) if norm == 'bnorm' else nn.InstanceNorm2d(in_channel * downscale_factor)]
+            layer += [nn.BatchNorm2d(out_channel) if norm == 'bnorm' else nn.InstanceNorm2d(out_channel)]
         if not drop is None:
             layer += [nn.Dropout2d(drop)]
         if not relu is None:
             layer += [nn.ReLU() if relu == 0 else nn.LeakyReLU(relu)]
 
-        self.decbdr = nn.Sequential(layer)
+        self.decbdr = nn.Sequential(*layer)
 
     def forward(self, x):
-        return self.decbdr(x)
+        x2 = torch.tensor(x.clone(), dtype=torch.float32)
+        return self.decbdr(x2)
 
 
 
