@@ -1,4 +1,6 @@
 import os
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import argparse
@@ -8,14 +10,13 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data
 import torchvision.utils as utils
-from utils import init_weights
-from tqdm import tqdm
+from utils import init_weights, display_transform
 from torch.utils.data import DataLoader
-
+from tqdm import tqdm
 from torchvision import transforms
 
 from model import Generator, Discriminator
-from data_loader import Dataset
+from data_loader import Dataset, RandomCrop, Resize, Normalization
 
 parser = argparse.ArgumentParser(description='Train Pix2Pix')
 parser.add_argument('--crop_size', default=256, type=int, help='training images crop size')
@@ -32,21 +33,28 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 crop_size = opt.crop_size
 num_epochs = opt.num_epochs
 
-transform = transforms.Compose([transforms.Resize((286, 286)),
-                                transforms.RandomCrop(crop_size, crop_size),
-                                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-                                transforms.ToTensor()])
+transform_train = transforms.Compose([
+    Resize(shape=(286, 286, 3)),
+    RandomCrop((256, 256)),
+    Normalization(mean=0.5, std=0.5)
+])
+
+transform_val = transforms.Compose([
+    Resize(shape=(256, 256, 3)),
+    Normalization(mean=0.5, std=0.5)
+])
 
 # data loading
-train_set = Dataset('./maps/train', opts=opt.opts)
-val_set = Dataset('./maps/val', opts=opt.opts)
+train_set = Dataset('./maps/train', transform=transform_train)
 train_loader = DataLoader(dataset=train_set, num_workers=0, batch_size=opt.batch_size, shuffle=True)
-val_loader = DataLoader(dataset=val_set, num_workers=0, batch_size=opt.batch_size, shuffle=False)
 
 num_batch_train = int((train_set.__len__() / opt.batch_size) + ((train_set.__len__() / opt.batch_size) != 0))
-num_batch_val = int((val_set.__len__() / opt.batch_size) + ((val_set.__len__() % opt.batch_size) != 0))
 
-netG = Generator(opt.scale_factor).to(device)
+out_path = 'training_results/SRF_2/'
+if not os.path.exists(out_path):
+    os.makedirs(out_path)
+
+netG = Generator().to(device)
 netD = Discriminator(opt.scale_factor).to(device)
 
 init_weights(netG)
@@ -57,6 +65,9 @@ l1_loss = nn.L1Loss().to(device)
 
 optimizerG = optim.Adam(netG.parameters(), lr=0.0002, betas=(0.5, 0.999))
 optimizerD = optim.Adam(netD.parameters(), lr=0.0002, betas=(0.5, 0.999))
+
+fn_tonumpy = lambda x: x.to('cpu').datach().numpy().transpose(0, 2, 3, 1)
+fn_denorm = lambda x, mean, std: (x * std) + mean
 
 for epoch in range(1, num_epochs + 1):
     netG.train()
@@ -71,8 +82,7 @@ for epoch in range(1, num_epochs + 1):
         label = data['label'].to(device)
         input = data['label'].to(device)
 
-        print(input.shape)
-        output = netG(input.permute(0, 3, 1, 2))
+        output = netG(input)
 
         optimizerD.zero_grad()
 
@@ -110,6 +120,25 @@ for epoch in range(1, num_epochs + 1):
 
         print("train: epoch %04d / %04d | batch: %04d / %04d | GAN gan %.4f | GAN L1 %.4f | DISC REAL: %.4f | DISC REAL: %.4f"
               % (num_epochs, epoch, num_batch_train, batch, np.mean(loss_G_gan_train), np.mean(loss_G_L1_train), np.mean(loss_D_real_train), np.mean(loss_D_fake_train)))
+
+        if epoch % 20 == 0:
+            input = fn_tonumpy(fn_denorm(input, mean=0.5, std=0.5)).squeeze()
+            label = fn_tonumpy(fn_denorm(label, mean=0.5, std=0.5)).squeeze()
+            output = fn_tonumpy(fn_denorm(output, mean=0.5, std=0.5)).squeeze()
+
+            input = np.clip(input, a_min=0, a_max=1)
+            label = np.clip(label, a_min=0, a_max=1)
+            output = np.clip(output, a_min=0, a_max=1)
+
+            plt.imsave(os.path.join(out_path, 'png', '%04d_input.png' % epoch/20), input[0], cmap=None)
+            plt.imsave(os.path.join(out_path, 'png', '%04d_label.png' % epoch/20), label[0], cmap=None)
+            plt.imsave(os.path.join(out_path, 'png', '%04d_output.png' % epoch/20), output[0], cmap=None)
+
+    torch.save(netG.state_dict(), 'epochs/netG_epoch_%d_%d.pth' % (2, epoch))
+    torch.save(netD.state_dict(), 'epochs/netD_epoch_%d_%d.pth' % (2, epoch))
+    netG.eval()
+
+
 
 
 
