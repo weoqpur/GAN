@@ -1,18 +1,14 @@
 import os
-
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import argparse
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data
-import torchvision.utils as utils
-from utils import init_weights, display_transform
+from utils import init_weights
 from torch.utils.data import DataLoader
-from tqdm import tqdm
 from torchvision import transforms
 
 from model import Generator, Discriminator
@@ -36,11 +32,6 @@ num_epochs = opt.num_epochs
 transform_train = transforms.Compose([
     Resize(shape=(286, 286, 3)),
     RandomCrop((256, 256)),
-    Normalization(mean=0.5, std=0.5)
-])
-
-transform_val = transforms.Compose([
-    Resize(shape=(256, 256, 3)),
     Normalization(mean=0.5, std=0.5)
 ])
 
