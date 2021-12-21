@@ -30,21 +30,13 @@ class Generator(nn.Module):
 
     def forward(self, x):
         enc1 = self.enc1(x)
-        print("enc1 {}".format(enc1.shape))
         enc2 = self.enc2(enc1)
-        print("enc2 {}".format(enc2.shape))
         enc3 = self.enc3(enc2)
-        print("enc3 {}".format(enc3.shape))
         enc4 = self.enc4(enc3)
-        print("enc4 {}".format(enc4.shape))
         enc5 = self.enc5(enc4)
-        print("enc5 {}".format(enc5.shape))
         enc6 = self.enc6(enc5)
-        print("enc6 {}".format(enc6.shape))
         enc7 = self.enc7(enc6)
-        print("enc7 {}".format(enc7.shape))
         enc8 = self.enc8(enc7)
-        print("enc8 {}".format(enc8.shape))
 
         dec1 = self.dec1(enc8)
 
