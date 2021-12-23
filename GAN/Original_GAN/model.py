@@ -5,14 +5,14 @@ import torch.nn as nn
 # 생성자 만들기 (Generator)
 class Generator(nn.Module):
     # 초기값 설정 - 인풋 채널, 아웃풋 채널, normalization
-    def __init__(self, img_shape):
+    def __init__(self, img_dim):
         super(Generator, self).__init__()
 
-        self.block1 = Block(100, 64 * 2, norm=False)
+        self.block1 = Block(img_dim, 64 * 2, norm=False)
         self.block2 = Block(64 * 2, 64 * 4)
         self.block3 = Block(64 * 4, 64 * 8)
         self.block4 = Block(64 * 8, 64 * 16)
-        self.linear = nn.Linear(1024, 256),
+        self.linear = nn.Linear(1024, 784)
         self.tanh = nn.Tanh()
 
     def forward(self, x):
@@ -31,7 +31,7 @@ class Discriminator(nn.Module):
         super(Discriminator, self).__init__()
 
         self.dis = nn.Sequential(
-            nn.Linear(256, 512),
+            nn.Linear(784, 512),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Linear(512, 256),
             nn.LeakyReLU(0.2, inplace=True),
@@ -51,10 +51,10 @@ class Block(nn.Module):
         layer = []
         layer += [nn.Linear(in_features=in_channel, out_features=out_channel)]
         if norm:
-            layer += [nn.BatchNorm2d(out_channel, 0.8)]
-        layer += (nn.LeakyReLU(0.2, inplace=True))
+            layer += [nn.BatchNorm1d(out_channel, 0.8)]
+        layer += [nn.LeakyReLU(0.2, inplace=True)]
 
         self.block = nn.Sequential(*layer)
 
     def forward(self, x):
-        return self.block(x.cloen())
+        return self.block(x.clone())
