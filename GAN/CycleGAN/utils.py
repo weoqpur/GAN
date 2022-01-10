@@ -1,17 +1,77 @@
+import os
 import torch
+import torch.nn as nn
 import numpy as np
 
 from scipy.stats import poisson
 from skimage.transform import rescale, resize
 
+# network grad 설정
+def set_requires_grad(nets, requires_grad=False):
+    if not isinstance(nets, list):
+        nets = [nets]
+    for net in nets:
+        if net is not None:
+            for param in net.parameters():
+                param.requires_grad = requires_grad
+
+
 # 가중치 초기화
-def init_weights(m):
-    classname = m.__class__.__name__
-    if classname.find("Conv") != -1:
-        torch.nn.init.normal_(m.weight.data, 0.0, 0.02)
-    elif classname.find("BatchNorm2d") != -1:
-        torch.nn.init.normal_(m.weight.data, 1.0, 0.02)
-        torch.nn.init.constant_(m.bias.data, 0.0)
+def init_weights(net, init_type='normal', init_gain=0.02):
+    def init_func(m):
+        classname = m.__class__.__name__
+        if hasattr(m, 'weight') and (classname.find('Conv') != -1 or classname.find('Linear') != -1):
+            if init_type == 'normal':
+                nn.init.normal_(m.weight.data, 0.0, init_gain)
+            elif init_type == 'xavier':
+                nn.init.xavier_normal_(m.weight.data, gain=init_gain)
+            elif init_type == 'kaiming':
+                nn.init.kaiming_normal_(m.weight.data, a=0, mode='fan_in')
+            elif init_type == 'orthogonal':
+                nn.init.orthogonal_(m.weight.data, gain=init_gain)
+            else:
+                raise NotImplementedError('initialization method [%s] is not implemented' % init_type)
+            if hasattr(m, 'bias') and m.bias is not None:
+                nn.init.constant_(m.bias.data, 0.0)
+        elif classname.find('BatchNorm2d') != -1:
+            nn.init.normal_(m.weight.data, 1.0, init_gain)
+            nn.init.constant_(m.bias.data, 0.0)
+
+    net.apply(init_func)
+
+
+def save(ckpt_dir, netG_x2y, netG_y2x, netD_x, netD_y, optimG, optimD, epoch):
+    if not os.path.exists(ckpt_dir):
+        os.makedirs(ckpt_dir)
+
+    torch.save({'netG_x2y': netG_x2y.state_dict(), 'netG_y2x': netG_y2x.state_dict(),
+                'netD_x': netD_x.state_dict, 'netD_y': netD_y.state_dict(),
+                'optimG': optimG.state_dict(), 'optimD': optimD.state_dict()},
+               '%s/model_epoch%d.pth' % (ckpt_dir, epoch))
+
+def load(ckpt_dir, netG_x2y, netG_y2x, netD_x, netD_y, optimG, optimD):
+    if not os.path.exists(ckpt_dir):
+        epoch = 0
+        return netG_x2y, netG_y2x, netD_x, netD_y, optimG, optimD, epoch
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    ckpt_lst = os.listdir(ckpt_dir)
+    ckpt_lst = [f for f in ckpt_lst if f.endswith('pth')]
+    ckpt_lst.sort(key=lambda f: int(''.join(filter(str.isdigit(), f))))
+
+    dict_model = torch.load('%s/%s' % (ckpt_dir, ckpt_lst[-1]), map_location=device)
+
+    netG_x2y.load_state_dict(dict_model['netG_x2y'])
+    netG_y2x.load_state_dict(dict_model['netG_y2x'])
+    netD_x.load_state_dict(dict_model['netD_x'])
+    netD_y.load_state_dict(dict_model['netD_y'])
+    optimG.load_state_dict(dict_model['optimG'])
+    optimD.load_state_dict(dict_model['optimD'])
+    epoch = int(ckpt_lst[-1].split('epoch')[1].split('.pth')[0])
+
+    return netG_x2y, netG_y2x, netD_x, netD_y, optimG, optimD, epoch
+
 
 def add_sampling(img, type='random', opts=None):
     sz = img.shape
@@ -84,18 +144,12 @@ def add_noise(img, type='random', opts=None):
 ## low-resolution 추가
 def add_blur(img, type='bilinear', opts=None):
     # rescale option들
-    if type == 'nearest':
-        order = 0
-    elif type == 'bilinear':
-        order = 1
-    elif type == 'biquadratic':
-        order = 2
-    elif type == 'bicubic':
-        order = 3
-    elif type == 'biquartic':
-        order = 4
-    elif type == 'biquintic':
-        order = 5
+    if type == 'nearest': order = 0
+    elif type == 'bilinear': order = 1
+    elif type == 'biquadratic': order = 2
+    elif type == 'bicubic': order = 3
+    elif type == 'biquartic': order = 4
+    elif type == 'biquintic': order = 5
 
     sz = img.shape
 
