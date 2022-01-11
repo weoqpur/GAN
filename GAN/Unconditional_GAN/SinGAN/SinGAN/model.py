@@ -5,12 +5,20 @@ import torch.nn.functional as F
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-class ConvBlock(nn.Sequential):
-    def __init__(self, in_channel, out_channel, ker_size, padd, stride):
-        super(ConvBlock, self).__init__()
-        self.add_module('conv',nn.Conv2d(in_channel, out_channel, kernel_size=ker_size, stride=stride, padding=padd)),
-        self.add_module('norm',nn.BatchNorm2d(out_channel)),
-        self.add_module('LeakyRelu', nn.LeakyReLU(0.2, inplace=True))
+class CBR2d(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size, padding, stride):
+        super(CBR2d, self).__init__()
+        layers = list()
+
+        layers += [nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, padding=padding,
+                             stride=stride)]
+        layers += [nn.BatchNorm2d(out_channels)]
+        layers += [nn.LeakyReLU(0.2, inplace=True)]
+
+        self.cbr = nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.cbr(x)
 
 def weights_init(m):
     classname = m.__class__.__name__
@@ -21,44 +29,42 @@ def weights_init(m):
         m.bias.data.fill_(0)
 
 class WDiscriminator(nn.Module):
-    def __init__(self, opt):
+    def __init__(self, in_channels, out_channels, kernel_size, padding, stride):
         super(WDiscriminator, self).__init__()
-        self.is_cuda = torch.to(device).is_available()
-        N = int(opt.nfc)
-        self.head = ConvBlock(opt.nc_im, N, opt.ker_size, opt.padd_size, 1)
-        self.body = nn.Sequential()
-        for i in range(opt.num_layer-2):
-            N = int(opt.nfc/pow(2, (i+1)))
-            block = ConvBlock(max(2*N, opt.min_nfc), max(N, opt.min_nfc), opt.ker_size, opt.padd_size, 1)
-            self.body.add_module('block%d'%(i+1), block)
-        self.tail = nn.Conv2d(max(N, opt.min_nfc), 1, kernel_size=opt.ker_size, stride=1, padding=opt.padd_size)
+        channels = 32
+        self.head = CBR2d(in_channels=in_channels, out_channels=channels, kernel_size=kernel_size, padding=padding,
+                          stride=stride)
+        self.body = CBR2d(in_channels=channels, out_channels=channels, kernel_size=kernel_size, padding=padding,
+                          stride=stride)
+        self.tail = nn.Conv2d(in_channels=channels, out_channels=out_channels, kernel_size=kernel_size, padding=padding,
+                              stride=stride)
 
     def forward(self, x):
         x = self.head(x)
         x = self.body(x)
+        x = self.body(x)
+        x = self.body(x)
         x = self.tail(x)
         return x
 
-class GeneratorConcatSkip2CleanAdd(nn.Module):
-    def __init__(self, opt):
-        super(GeneratorConcatSkip2CleanAdd, self).__init__()
-        self.is_cuda = torch.to(device).is_available()
-        N = opt.nfc
-        self.head = ConvBlock(opt.nc_im, N, opt.ker_size, opt.padd_size, 1)
-        self.body = nn.Sequential()
-        for i in range(opt.num_layer-2):
-            N = int(opt.nfc/pow(2, (i+1)))
-            block = ConvBlock(max(2*N, opt.min_nfc), max(N, opt.min_nfc), opt.ker_size, opt.padd_size, 1)
-            self.body.add_module('block%d'%(i+1), block)
-        self.tail = nn.Sequential(
-            nn.Conv2d(max(N, opt.min_nfc), opt.nc_im, kernel_size=opt.ker_size, stride=1, padding=opt.padd_size),
-            nn.Tanh()
-        )
+class Generator(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size, padding, stride):
+        super(Generator, self).__init__()
+        channels = 32
+        self.head = CBR2d(in_channels=in_channels, out_channels=channels, kernel_size=kernel_size, padding=padding,
+                          stride=stride)
+        self.body = CBR2d(in_channels=channels, out_channels=channels, kernel_size=kernel_size, padding=padding,
+                          stride=stride)
+        self.tail = nn.Conv2d(in_channels=channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride,
+                              padding=padding)
 
     def forward(self, x, y):
         x = self.head(x)
         x = self.body(x)
+        x = self.body(x)
+        x = self.body(x)
         x = self.tail(x)
+        x = torch.tanh(x)
         ind = int((y.shape[2]-x.shape[2])/2)
         y = y[:,:,ind:(y.shape[2]-ind), ind:(y.shape[3]-ind)]
         return x+y
