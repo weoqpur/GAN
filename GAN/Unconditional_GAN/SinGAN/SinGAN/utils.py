@@ -6,6 +6,15 @@ import numpy as np
 from scipy.stats import poisson
 from skimage.transform import rescale, resize
 
+# network grad 설정
+def set_requires_grad(nets, requires_grad=False):
+    if not isinstance(nets, list):
+        nets = [nets]
+    for net in nets:
+        if net is not None:
+            for param in net.parameters():
+                param.requires_grad = requires_grad
+
 # 가중치 초기화
 def init_weights(net, init_type='normal', init_gain=0.02):
     def init_func(m):
@@ -28,3 +37,15 @@ def init_weights(net, init_type='normal', init_gain=0.02):
             nn.init.constant_(m.bias.data, 0.0)
 
     net.apply(init_func)
+
+def norm(x):
+    out = (x - 0.5) * 2
+    return out.clamp(-1, 1)
+
+# numpy 에서 torch tensor
+def np2torch(x):
+    x = x[:,:,:,None]
+    x = torch.from_numpy(x.transpose((3, 2, 0, 1))/255)
+    x = x.type(torch.cuda.FloatTensor)
+    x = norm(x)
+    return x
