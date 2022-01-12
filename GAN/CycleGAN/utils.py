@@ -104,19 +104,6 @@ def add_sampling(img, type='random', opts=None):
 
         x, y = np.meshgrid(lx, ly)
 
-    elif type == 'gaussian':
-        x0 = opts[0]
-        y0 = opts[1]
-        sgmx = opts[2]
-        sgmy = opts[3]
-
-        a = opts[4]
-
-        ly = np.linspace(-1, 1, sz[0])
-        lx = np.linspace(-1, 1, sz[1])
-
-        x, y = np.meshgrid(lx, ly)
-
         gaus = a * np.exp(-((x - x0)**2/(2*sgmx**2) + (y - y0)**2/(2*sgmy**2)))
         gaus = np.tile(gaus[:, :, np.newaxis], (1, 1, sz[2]))
         rnd = np.random.rand(sz[0], sz[1], sz[2])
