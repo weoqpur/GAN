@@ -24,11 +24,11 @@ class WDiscriminator(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(WDiscriminator, self).__init__()
         channels = 32
-        self.head = CBR2d(in_channels=in_channels, out_channels=channels, kernel_size=3, padding=1, stride=1)
-        self.body1 = CBR2d(in_channels=channels, out_channels=channels, kernel_size=3, padding=1, stride=1)
-        self.body2 = CBR2d(in_channels=channels, out_channels=channels, kernel_size=3, padding=1, stride=1)
-        self.body3 = CBR2d(in_channels=channels, out_channels=channels, kernel_size=3, padding=1, stride=1)
-        self.tail = nn.Conv2d(in_channels=channels, out_channels=out_channels, kernel_size=3, padding=1, stride=1)
+        self.head = CBR2d(in_channels=in_channels, out_channels=channels, kernel_size=3, padding=0, stride=1)
+        self.body1 = CBR2d(in_channels=channels, out_channels=channels, kernel_size=3, padding=0, stride=1)
+        self.body2 = CBR2d(in_channels=channels, out_channels=channels, kernel_size=3, padding=0, stride=1)
+        self.body3 = CBR2d(in_channels=channels, out_channels=channels, kernel_size=3, padding=0, stride=1)
+        self.tail = nn.Conv2d(in_channels=channels, out_channels=out_channels, kernel_size=3, padding=0, stride=1)
 
     def forward(self, x):
         x = self.head(x)
@@ -42,11 +42,11 @@ class Generator(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(Generator, self).__init__()
         channels = 32
-        self.head = CBR2d(in_channels=in_channels, out_channels=channels, kernel_size=3, padding=1, stride=1)
-        self.body1 = CBR2d(in_channels=channels, out_channels=channels, kernel_size=3, padding=1, stride=1)
-        self.body2 = CBR2d(in_channels=channels, out_channels=channels, kernel_size=3, padding=1, stride=1)
-        self.body3 = CBR2d(in_channels=channels, out_channels=channels, kernel_size=3, padding=1, stride=1)
-        self.tail = nn.Conv2d(in_channels=channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1)
+        self.head = CBR2d(in_channels=in_channels, out_channels=channels, kernel_size=3, padding=0, stride=1)
+        self.body1 = CBR2d(in_channels=channels, out_channels=channels, kernel_size=3, padding=0, stride=1)
+        self.body2 = CBR2d(in_channels=channels, out_channels=channels, kernel_size=3, padding=0, stride=1)
+        self.body3 = CBR2d(in_channels=channels, out_channels=channels, kernel_size=3, padding=0, stride=1)
+        self.tail = nn.Conv2d(in_channels=channels, out_channels=out_channels, kernel_size=3, padding=0, stride=1)
 
     def forward(self, x, y):
         x = self.head(x)
